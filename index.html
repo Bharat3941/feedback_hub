@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Giva Feedback Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #f4f7f6; }
+        .container { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        .card { background: white; padding: 1.5rem; border-radius: 8px; flex: 1; min-width: 300px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, select, textarea { width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        #insight-box { margin-top: 15px; padding: 15px; background: #e3f2fd; border-left: 5px solid #2196f3; display: none; }
+    </style>
+</head>
+<body>
+    <h1>💎 Giva Feedback Hub</h1>
+    <div class="container">
+        <div class="card">
+            <h2>Submit Review</h2>
+            <form id="feedbackForm">
+                <label>Product:</label>
+                <select id="productId" onchange="updateDashboard(this.value)">
+                    <option value="101">Silver Ring (101)</option>
+                    <option value="102">Gold Necklace (102)</option>
+                    <option value="103">Diamond Studs (103)</option>
+                </select>
+                <label>Rating (1-5):</label>
+                <input type="number" id="rating" min="1" max="5" value="5">
+                <textarea id="reviewText" rows="3" placeholder="Enter review here..."></textarea>
+                <button type="submit" style="background: #28a745; color: white;">Submit Feedback</button>
+            </form>
+        </div>
+        <div class="card">
+            <h2>Intelligence</h2>
+            <button onclick="generateInsights()" style="background: #007bff; color: white;">Generate Insights</button>
+            <div id="insight-box"></div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="card"><h3>Sentiment Analysis</h3><canvas id="sentimentChart"></canvas></div>
+        <div class="card"><h3>Theme Counts</h3><canvas id="themeChart"></canvas></div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:5001/feedback";
+        let sentimentChart, themeChart;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('sentimentChart').getContext('2d');
+            sentimentChart = new Chart(ctx1, { type: 'pie', data: { labels: ['Positive', 'Negative', 'Neutral'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#28a745', '#dc3545', '#ffc107'] }] } });
+            const ctx2 = document.getElementById('themeChart').getContext('2d');
+            themeChart = new Chart(ctx2, { type: 'bar', data: { labels: ['Comfort', 'Durability', 'Appearance'], datasets: [{ label: 'Mentions', data: [0, 0, 0], backgroundColor: '#007bff' }] } });
+        }
+        initCharts();
+
+        async function updateDashboard(pid) {
+            const res = await fetch(`${API_URL}/${pid}`);
+            const data = await res.json();
+            let s = { Positive: 0, Negative: 0, Neutral: 0 }, t = { Comfort: 0, Durability: 0, Appearance: 0 };
+            data.forEach(d => { s[d.sentiment]++; d.themes.forEach(th => t[th]++); });
+            sentimentChart.data.datasets[0].data = [s.Positive, s.Negative, s.Neutral];
+            themeChart.data.datasets[0].data = [t.Comfort, t.Durability, t.Appearance];
+            sentimentChart.update(); themeChart.update();
+        }
+
+        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = { product_id: document.getElementById('productId').value, rating: document.getElementById('rating').value, review_text: document.getElementById('reviewText').value };
+            await fetch(API_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+            alert("Feedback Submitted!");
+            updateDashboard(body.product_id);
+        });
+
+        async function generateInsights() {
+            const pid = document.getElementById('productId').value;
+            const res = await fetch(`${API_URL}/${pid}`);
+            const data = await res.json();
+            if (data.length === 0) return alert("No data yet.");
+            
+            const negs = data.filter(d => d.sentiment === "Negative");
+            const durabilityIssues = negs.filter(d => d.themes.includes("Durability")).length;
+            const comfortIssues = negs.filter(d => d.themes.includes("Comfort")).length;
+
+            let html = "<strong>Recommendations:</strong><br>";
+            if (durabilityIssues > 0) html += "• Improve durability: Complaints detected.<br>";
+            if (comfortIssues > data.length / 3) html += "• Consider lighter designs: Comfort is an issue.<br>";
+            if (negs.length > data.length / 2) html += "• Alert: High dissatisfaction rate detected.<br>";
+            if (html === "<strong>Recommendations:</strong><br>") html += "• Product performing well.";
+            
+            document.getElementById('insight-box').innerHTML = html;
+            document.getElementById('insight-box').style.display = 'block';
+        }
+        updateDashboard("101");
+    </script>
+</body>
+</html>
