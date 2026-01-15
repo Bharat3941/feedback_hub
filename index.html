@@ -2,96 +2,225 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Giva Feedback Hub</title>
+    <title>Giva | Studio Intelligence</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #f4f7f6; }
-        .container { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
-        .card { background: white; padding: 1.5rem; border-radius: 8px; flex: 1; min-width: 300px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input, select, textarea { width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        #insight-box { margin-top: 15px; padding: 15px; background: #e3f2fd; border-left: 5px solid #2196f3; display: none; }
+        :root {
+            --ink: #1e1e1e;
+            --gold: #b8964d;
+            --paper: #f9f9f9;
+            --white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--paper);
+            color: var(--ink);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation */
+        header {
+            height: 60px;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            background: var(--white);
+        }
+
+        header h1 { font-size: 0.9rem; letter-spacing: 3px; text-transform: uppercase; margin: 0; font-weight: 700; }
+
+        /* Main Grid: Input (Left) | Visuals (Center) | Insights (Right) */
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 20px;
+            padding: 20px;
+            flex: 1;
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: var(--white);
+            border: 1px solid #eaeaea;
+            border-radius: 4px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; color: #aaa; margin-bottom: 20px; font-weight: bold; }
+
+        /* Center Column - Data Focus */
+        .visual-hub {
+            display: grid;
+            grid-template-rows: 1.2fr 1fr;
+            gap: 20px;
+        }
+
+        /* Inputs & Form */
+        select, input, textarea {
+            width: 100%;
+            padding: 12px 0;
+            margin-bottom: 20px;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus { border-bottom: 1px solid var(--gold); }
+
+        .btn {
+            background: var(--ink);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+
+        .btn:hover { background: var(--gold); }
+
+        /* Insights Result Styling */
+        #logic-out {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #444;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+            margin-top: 20px;
+        }
+
+        canvas { width: 100% !important; max-height: 90% !important; }
+
     </style>
 </head>
 <body>
-    <h1>💎 Giva Feedback Hub</h1>
-    <div class="container">
-        <div class="card">
-            <h2>Submit Review</h2>
-            <form id="feedbackForm">
-                <label>Product:</label>
-                <select id="productId" onchange="updateDashboard(this.value)">
-                    <option value="101">Silver Ring (101)</option>
-                    <option value="102">Gold Necklace (102)</option>
-                    <option value="103">Diamond Studs (103)</option>
-                </select>
-                <label>Rating (1-5):</label>
-                <input type="number" id="rating" min="1" max="5" value="5">
-                <textarea id="reviewText" rows="3" placeholder="Enter review here..."></textarea>
-                <button type="submit" style="background: #28a745; color: white;">Submit Feedback</button>
-            </form>
-        </div>
-        <div class="card">
-            <h2>Intelligence</h2>
-            <button onclick="generateInsights()" style="background: #007bff; color: white;">Generate Insights</button>
-            <div id="insight-box"></div>
-        </div>
-    </div>
-    <div class="container">
-        <div class="card"><h3>Sentiment Analysis</h3><canvas id="sentimentChart"></canvas></div>
-        <div class="card"><h3>Theme Counts</h3><canvas id="themeChart"></canvas></div>
+
+<header>
+    <h1>Giva <span style="font-weight: 300;">Analytics Studio</span></h1>
+    <div style="font-size: 0.7rem; color: #888;">INTERNAL USE ONLY // V 2.1</div>
+</header>
+
+<div class="workspace">
+    
+    <div class="panel">
+        <div class="label">Entry Module</div>
+        <form id="feedbackForm">
+            <select id="pid" onchange="refresh()">
+                <option value="101">Product SKU: 101 (Ring)</option>
+                <option value="102">Product SKU: 102 (Necklace)</option>
+                <option value="103">Product SKU: 103 (Studs)</option>
+            </select>
+            <input type="number" id="rating" min="1" max="5" value="5" placeholder="Customer Stars">
+            <textarea id="text" rows="5" placeholder="Paste feedback text here..."></textarea>
+            <button type="submit" class="btn">Process Entry</button>
+        </form>
     </div>
 
-    <script>
-        const API_URL = "http://127.0.0.1:5001/feedback";
-        let sentimentChart, themeChart;
+    <div class="visual-hub">
+        <div class="panel" style="align-items: center;">
+            <div class="label">Sentiment Core</div>
+            <canvas id="sCore"></canvas>
+        </div>
+        <div class="panel">
+            <div class="label">Theme Distribution</div>
+            <canvas id="tMatrix"></canvas>
+        </div>
+    </div>
 
-        function initCharts() {
-            const ctx1 = document.getElementById('sentimentChart').getContext('2d');
-            sentimentChart = new Chart(ctx1, { type: 'pie', data: { labels: ['Positive', 'Negative', 'Neutral'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#28a745', '#dc3545', '#ffc107'] }] } });
-            const ctx2 = document.getElementById('themeChart').getContext('2d');
-            themeChart = new Chart(ctx2, { type: 'bar', data: { labels: ['Comfort', 'Durability', 'Appearance'], datasets: [{ label: 'Mentions', data: [0, 0, 0], backgroundColor: '#007bff' }] } });
-        }
-        initCharts();
+    <div class="panel">
+        <div class="label">Heuristic Intelligence</div>
+        <p style="font-size: 0.8rem; color: #777;">Automatic trend detection based on rule-based processing.</p>
+        <button onclick="analyze()" class="btn" style="background: transparent; color: var(--ink); border: 1px solid #ccc;">Scan Patterns</button>
+        <div id="logic-out">Results will appear after scanning...</div>
+    </div>
 
-        async function updateDashboard(pid) {
-            const res = await fetch(`${API_URL}/${pid}`);
-            const data = await res.json();
-            let s = { Positive: 0, Negative: 0, Neutral: 0 }, t = { Comfort: 0, Durability: 0, Appearance: 0 };
-            data.forEach(d => { s[d.sentiment]++; d.themes.forEach(th => t[th]++); });
-            sentimentChart.data.datasets[0].data = [s.Positive, s.Negative, s.Neutral];
-            themeChart.data.datasets[0].data = [t.Comfort, t.Durability, t.Appearance];
-            sentimentChart.update(); themeChart.update();
-        }
+</div>
 
-        document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const body = { product_id: document.getElementById('productId').value, rating: document.getElementById('rating').value, review_text: document.getElementById('reviewText').value };
-            await fetch(API_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
-            alert("Feedback Submitted!");
-            updateDashboard(body.product_id);
+<script>
+    const URI = "http://127.0.0.1:5001/feedback";
+    let sChart, tChart;
+
+    function start() {
+        const sCtx = document.getElementById('sCore').getContext('2d');
+        sChart = new Chart(sCtx, {
+            type: 'doughnut',
+            data: { labels: ['Pos', 'Neg', 'Neu'], datasets: [{ data: [0,0,0], backgroundColor: ['#1e1e1e', '#b8964d', '#e5e5e5'], borderWeight: 0 }] },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } }, cutout: '75%' }
         });
 
-        async function generateInsights() {
-            const pid = document.getElementById('productId').value;
-            const res = await fetch(`${API_URL}/${pid}`);
-            const data = await res.json();
-            if (data.length === 0) return alert("No data yet.");
-            
-            const negs = data.filter(d => d.sentiment === "Negative");
-            const durabilityIssues = negs.filter(d => d.themes.includes("Durability")).length;
-            const comfortIssues = negs.filter(d => d.themes.includes("Comfort")).length;
+        const tCtx = document.getElementById('tMatrix').getContext('2d');
+        tChart = new Chart(tCtx, {
+            type: 'bar',
+            data: { labels: ['Comfort', 'Durability', 'Appearance'], datasets: [{ label: 'Mentions', data: [0,0,0], backgroundColor: '#1e1e1e', barThickness: 20 }] },
+            options: { maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { display: false } } }
+        });
+    }
 
-            let html = "<strong>Recommendations:</strong><br>";
-            if (durabilityIssues > 0) html += "• Improve durability: Complaints detected.<br>";
-            if (comfortIssues > data.length / 3) html += "• Consider lighter designs: Comfort is an issue.<br>";
-            if (negs.length > data.length / 2) html += "• Alert: High dissatisfaction rate detected.<br>";
-            if (html === "<strong>Recommendations:</strong><br>") html += "• Product performing well.";
-            
-            document.getElementById('insight-box').innerHTML = html;
-            document.getElementById('insight-box').style.display = 'block';
-        }
-        updateDashboard("101");
+    async function refresh() {
+        const id = document.getElementById('pid').value;
+        const res = await fetch(\`\${URI}/\${id}\`);
+        const items = await res.json();
+
+        let s = { Positive: 0, Negative: 0, Neutral: 0 };
+        let t = { Comfort: 0, Durability: 0, Appearance: 0 };
+
+        items.forEach(i => {
+            s[i.sentiment]++;
+            i.themes.forEach(th => t[th]++);
+        });
+
+        sChart.data.datasets[0].data = [s.Positive, s.Negative, s.Neutral];
+        tChart.data.datasets[0].data = [t.Comfort, t.Durability, t.Appearance];
+        
+        sChart.update(); tChart.update();
+    }
+
+    async function analyze() {
+        const id = document.getElementById('pid').value;
+        const res = await fetch(\`\${URI}/\${id}\`);
+        const data = await res.json();
+        if (data.length === 0) return;
+
+        const low = data.filter(d => d.sentiment === "Negative");
+        const qc = low.filter(d => d.themes.includes("Durability")).length;
+
+        let out = "<b>System Findings:</b><br><br>";
+        if (qc > 0) out += "• Detected material fatigue indicators. QC suggested.<br>";
+        if (low.length > data.length / 2) out += "• Warning: Critical negative threshold exceeded.<br>";
+        if (out === "<b>System Findings:</b><br><br>") out += "• Sentiment alignment within target parameters.";
+        
+        document.getElementById('logic-out').innerHTML = out;
+    }
+
+    document.getElementById('feedbackForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const body = {
+            product_id: document.getElementById('pid').value,
+            rating: document.getElementById('rating').value,
+            review_text: document.getElementById('text').value
+        };
+        await fetch(URI, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+        document.getElementById('text').value = "";
+        refresh();
+    };
+
+    start();
+    refresh();
+
     </script>
 </body>
 </html>
